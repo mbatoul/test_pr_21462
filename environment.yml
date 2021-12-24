@@ -1,0 +1,9 @@
+name: test_pr_21462
+channels:
+  - conda-forge
+dependencies:
+  - scikit-learn-intelex
+  - submitit
+  - cython
+  - numpy
+  - scipy
