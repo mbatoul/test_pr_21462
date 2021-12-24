@@ -1,28 +1,19 @@
-#
-# Simple script to test problems results with:
-#   https://github.com/mbatoul/sklearn_benchmarks/blob/dummy_gh_pages/results/hpc_cluster/20211130T232044/config.yml
-#   https://mbatoul.github.io/sklearn_benchmarks/results/hpc_cluster/20211130T232044/scikit_learn_intelex_vs_scikit_learn.html
-#
-# Setup env:
-# conda create -n test_pr_21462 -c conda-forge scikit-learn-intelex submitit cython numpy scipy
-# conda activate test_pr_21462
-# conda remove scikit-learn
-# git clone --single-branch --branch pairwise-distances-argkmin https://github.com/jjerphan/scikit-learn.git
-# cd scikit-learn
-# python setup.py develop
-# conda list | grep scikit-learn
-# cd ..
-# python script_pr_21462.py
 
-import submitit
-import time
+
 import shutil
+import time
+from importlib.metadata import version
+from pprint import pprint
 
+import joblib
 import numpy as np
+import submitit
 from sklearn.datasets import make_classification
-
 from sklearn.neighbors import KNeighborsClassifier
-from sklearnex.neighbors import KNeighborsClassifier as KNeighborsClassifierSklearnex
+from sklearn.utils._show_versions import _get_deps_info, _get_sys_info
+from sklearnex.neighbors import \
+    KNeighborsClassifier as KNeighborsClassifierSklearnex
+from threadpoolctl import threadpool_info
 
 N_EXECUTIONS = 10
 LOGS_FOLDER = "./tmp"
@@ -51,6 +42,23 @@ def run_benchmark(estimator):
 
     return mean_duration, std_duration
 
+environment_information = {}
+environment_information["system"] = _get_sys_info()
+environment_information["dependencies"] = _get_deps_info()
+environment_information["threadpool"] = threadpool_info()
+environment_information["cpu_count"] = joblib.cpu_count(only_physical_cores=True)
+
+print("Env info")
+pprint(environment_information)
+print("\n")
+
+versions = {}
+for lib in ["scikit-learn", "scikit-learn-intelex"]:
+    versions[lib] = version(lib)
+
+print("Versions")
+pprint(versions)
+print("\n")
 
 executor = submitit.AutoExecutor(folder=LOGS_FOLDER)
 executor.update_parameters(
@@ -83,6 +91,8 @@ std_speedup = speedup * (
         + (std_duration_sklearnex / mean_duration_sklearnex) ** 2
     )
 )
+
+print("Benchmark results")
 print("speedup: ", round(speedup, 3))
 print("std_speedup: ", round(std_speedup, 3))
 

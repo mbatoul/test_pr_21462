@@ -7,3 +7,5 @@ dependencies:
   - cython
   - numpy
   - scipy
+  - joblib
+  - threadpoolctl
